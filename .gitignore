@@ -1,0 +1,9 @@
+# MATLAB / Simulink temporary and cache files
+*.asv
+*.m~
+*.slxc
+slprj/
+
+# OS/System generated files
+.DS_Store
+Thumbs.db
