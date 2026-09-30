@@ -1,0 +1,16 @@
+# Repo menyimpan LF; file teks di-checkout sebagai CRLF di semua OS
+# (repo dipakai bergantian di Windows & Linux dari drive eksternal),
+# sehingga `git status` tetap bersih di kedua OS.
+* text=auto eol=crlf
+
+*.sh  text eol=lf
+
+# Binary
+*.slx  binary
+*.mdl  -text
+*.mat  binary
+*.fig  binary
+*.pdf  binary
+*.png  binary
+*.jpg  binary
+*.svg  text eol=lf

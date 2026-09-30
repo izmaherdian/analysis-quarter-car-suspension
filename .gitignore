@@ -1,9 +1,22 @@
-# MATLAB / Simulink temporary and cache files
+# Simulink cache & build artifacts (dibuat ulang otomatis oleh MATLAB)
+slprj/
+*.slxc
+*.autosave
+*.slx.r20*
+*.mexa64
+*.mexw64
+*.mexmaci64
+
+# MATLAB backup / temp
 *.asv
 *.m~
-*.slxc
-slprj/
+*~
 
-# OS/System generated files
+# OS
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# Python (skrip pembuat gambar README)
+__pycache__/
+.venv/
