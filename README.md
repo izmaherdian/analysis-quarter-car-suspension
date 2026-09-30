@@ -1,42 +1,42 @@
-# Analisis & Kontrol Suspensi Aktif Quarter-Car
+# Active Quarter-Car Suspension: Analysis & Control
 
 ![MATLAB](https://img.shields.io/badge/MATLAB-R2023b-orange?logo=mathworks)
 ![Simulink](https://img.shields.io/badge/Simulink-model-blue)
-![Status](https://img.shields.io/badge/status-akademik-lightgrey)
+![Status](https://img.shields.io/badge/status-academic-lightgrey)
 
-Pemodelan *state-space* sistem suspensi aktif seperempat mobil (2-DOF) dengan parameter **BMW 530i**, analisis *controllability*/*observability*, serta perbandingan beberapa strategi kontrol berbasis LQR: **LQR**, **LQR-PID**, dan **Internal Model Principle (IMP)**. Bobot $Q$ dan $R$ dicari otomatis dengan **Genetic Algorithm (GA)**. Pendekatan **Pontryagin's Maximum Principle (PMP)** dan **Reinforcement Learning (RL)** masih dikerjakan.
+State-space modelling of a 2-DOF active quarter-car suspension using **BMW 530i** parameters, a controllability/observability analysis, and a comparison of several LQR-based control strategies: **LQR**, **LQR-PID**, and the **Internal Model Principle (IMP)**. The $Q$ and $R$ weights are tuned automatically with a **Genetic Algorithm (GA)**. **Pontryagin's Maximum Principle (PMP)** and **Reinforcement Learning (RL)** approaches are work in progress.
 
-> Tugas mata kuliah **TF4108 Pembelajaran Mesin untuk Kontrol**, Program Studi Teknik Fisika, Institut Teknologi Bandung (2024).
+> Course project for **TF4108 Machine Learning for Control**, Engineering Physics, Institut Teknologi Bandung (2024).
 > Achriza Nurfarid (13321023) · Izma Alhazmi Herdian (13321027) · Ilham Bintang (13321047)
 
 <p align="center">
-  <img src="docs/images/quarter_car_model.png" width="440" alt="Model quarter-car">
+  <img src="docs/images/quarter_car_model.png" width="440" alt="Quarter-car model">
 </p>
 
 ---
 
-## Daftar Isi
+## Table of Contents
 
-1. [Struktur Repository](#struktur-repository)
-2. [Pemodelan Sistem](#1-pemodelan-sistem)
-3. [Analisis Sistem Open-Loop](#2-analisis-sistem-open-loop)
-4. [Metode Kontrol](#3-metode-kontrol)
-5. [Hasil](#4-hasil)
-6. [Cara Menjalankan](#5-cara-menjalankan)
-7. [Catatan & Keterbatasan](#6-catatan--keterbatasan)
-8. [Referensi](#7-referensi)
+1. [Repository Structure](#repository-structure)
+2. [System Modelling](#1-system-modelling)
+3. [Open-Loop Analysis](#2-open-loop-analysis)
+4. [Control Methods](#3-control-methods)
+5. [Results](#4-results)
+6. [Getting Started](#5-getting-started)
+7. [Notes & Limitations](#6-notes--limitations)
+8. [References](#7-references)
 
 ---
 
-## Struktur Repository
+## Repository Structure
 
 ```
 AnalysisQuarterCarSuspension/
-├── 01_LQR/              # LQR baseline vs LQR yang bobotnya dioptimasi GA
-│   ├── FindLQR.m        #   script utama: model → GA → lqr() → simulasi Simulink → plot
-│   ├── GA.m             #   versi tanpa Simulink (ode45) + validasi stabilitas
-│   └── CariLQR.slx      #   model Simulink
-├── 03_LQR_PID/          # MIMO-PID yang ditala dari gain LQR (augmentasi integral)
+├── 01_LQR/              # Baseline LQR vs GA-tuned LQR
+│   ├── FindLQR.m        #   main script: model → GA → lqr() → Simulink simulation → plots
+│   ├── GA.m             #   Simulink-free version (ode45) + stability validation
+│   └── CariLQR.slx      #   Simulink model
+├── 03_LQR_PID/          # MIMO-PID tuned from LQR gains (integral augmentation)
 │   ├── FindLQR_PID.m
 │   └── CariLQR_PID.slx
 ├── 04_PMP/              # Pontryagin's Maximum Principle (WIP)
@@ -45,23 +45,23 @@ AnalysisQuarterCarSuspension/
 ├── 05_IMP/              # Internal Model Principle + LQR
 │   ├── FindIMP.m
 │   └── CariIMP.slx
-├── 06_RL/               # Reinforcement Learning (WIP, baru model Simulink)
+├── 06_RL/               # Reinforcement Learning (WIP, Simulink model only)
 │   └── FindRL.slx
 ├── docs/
-│   ├── Report.pdf       # laporan lengkap (pemodelan, observability, LQR)
-│   ├── images/          # semua gambar di README
+│   ├── Report.pdf       # full report (modelling, observability, LQR), in Indonesian
+│   ├── images/          # all figures used in this README
 │   └── scripts/
-│       └── generate_figures.py   # membuat ulang gambar ilustrasi README
-└── references/          # jurnal & materi rujukan
+│       └── generate_figures.py   # regenerates the README illustrations
+└── references/          # reference papers & lecture material
 ```
 
 ---
 
-## 1. Pemodelan Sistem
+## 1. System Modelling
 
-### 1.1 Persamaan gerak
+### 1.1 Equations of motion
 
-Sistem terdiri dari massa bodi $m_c$ (*sprung mass*) dan massa roda $m_{us}$ (*unsprung mass*). Keduanya dihubungkan oleh pegas $k_r$, peredam $b_r$, dan aktuator $F_a$. Roda menapak jalan melalui kekakuan ban $k_k$ dengan eksitasi profil jalan $u(t)$. Dengan hukum Newton II:
+The system consists of the body mass $m_c$ (*sprung mass*) and the wheel mass $m_{us}$ (*unsprung mass*), connected by a spring $k_r$, a damper $b_r$, and an actuator $F_a$. The wheel contacts the road through the tire stiffness $k_k$ and is excited by the road profile $u(t)$. From Newton's second law:
 
 ```math
 \begin{aligned}
@@ -70,9 +70,9 @@ m_c\,\ddot y_c &= k_r\,(y_k - y_c) + b_r\,(\dot y_k - \dot y_c) + F_a
 \end{aligned}
 ```
 
-### 1.2 Representasi state-space
+### 1.2 State-space representation
 
-Variabel keadaan yang dipilih:
+With the state and input vectors
 
 ```math
 x = \begin{bmatrix} x_1 \\ x_2 \\ x_3 \\ x_4 \end{bmatrix}
@@ -81,7 +81,7 @@ x = \begin{bmatrix} x_1 \\ x_2 \\ x_3 \\ x_4 \end{bmatrix}
 \mathbf{u} = \begin{bmatrix} F_a \\ u \end{bmatrix}
 ```
 
-sehingga $\dot x = Ax + B\mathbf{u}$, $\;y = Cx + D\mathbf{u}$ dengan
+the system becomes $\dot x = Ax + B\mathbf{u}$, $\;y = Cx + D\mathbf{u}$, where
 
 ```math
 A = \begin{bmatrix}
@@ -101,19 +101,19 @@ B = \begin{bmatrix}
 C = \begin{bmatrix} 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix}
 ```
 
-Output yang dikontrol adalah perpindahan dan kecepatan bodi ($y_c$, $\dot y_c$), karena keduanya menentukan kenyamanan penumpang.
+The controlled outputs are the body displacement and velocity ($y_c$, $\dot y_c$), since these determine passenger ride comfort.
 
-### 1.3 Parameter (BMW 530i)
+### 1.3 Parameters (BMW 530i)
 
-| Parameter | Simbol | Depan | Belakang | Satuan |
+| Parameter | Symbol | Front | Rear | Unit |
 |---|:---:|---:|---:|:---:|
-| Kekakuan pegas suspensi | $k_r$ | 30 | 31.5 | kN/m |
-| Koefisien redaman suspensi | $b_r$ | 1450 | 4000 | N·s/m |
-| Kekakuan ban | $k_k$ | 340 | 340 | kN/m |
-| Massa bodi (¼ kendaraan) | $m_c$ | 408 | 400 | kg |
-| Massa roda | $m_{us}$ | 48.3 | 45 | kg |
+| Suspension spring stiffness | $k_r$ | 30 | 31.5 | kN/m |
+| Suspension damping coefficient | $b_r$ | 1450 | 4000 | N·s/m |
+| Tire stiffness | $k_k$ | 340 | 340 | kN/m |
+| Body mass (¼ vehicle) | $m_c$ | 408 | 400 | kg |
+| Wheel mass | $m_{us}$ | 48.3 | 45 | kg |
 
-Seluruh simulasi memakai parameter **bagian depan**. Dengan satuan SI, matriks numeriknya menjadi:
+All simulations use the **front** parameters. In SI units the numerical matrices are:
 
 ```math
 A = \begin{bmatrix}
@@ -133,18 +133,18 @@ B = \begin{bmatrix}
 
 ---
 
-## 2. Analisis Sistem Open-Loop
+## 2. Open-Loop Analysis
 
-### 2.1 Kestabilan & mode getar
+### 2.1 Stability & vibration modes
 
-Nilai eigen $A$ memperlihatkan dua mode osilasi teredam yang khas pada suspensi kendaraan:
+The eigenvalues of $A$ show the two lightly damped oscillatory modes typical of a vehicle suspension:
 
 | Mode | Pole $\lambda$ | $\omega_n$ | $f_n$ | $\zeta$ |
 |---|:---:|:---:|:---:|:---:|
-| Bodi (*body bounce*) | $-1.51 \pm 8.13j$ | 8.27 rad/s | **1.32 Hz** | 0.18 |
-| Roda (*wheel hop*) | $-15.27 \pm 85.67j$ | 87.0 rad/s | **13.85 Hz** | 0.18 |
+| Body bounce | $-1.51 \pm 8.13j$ | 8.27 rad/s | **1.32 Hz** | 0.18 |
+| Wheel hop | $-15.27 \pm 85.67j$ | 87.0 rad/s | **13.85 Hz** | 0.18 |
 
-Semua pole berada di setengah bidang kiri ($\mathrm{Re}\{\lambda_i\}<0$), jadi sistem **stabil**. Namun rasio redamannya hanya ±0.18, sehingga respons berosilasi dengan overshoot ~60%.
+All poles lie in the left half-plane ($\mathrm{Re}\{\lambda_i\}<0$), so the system is **stable**. However, the damping ratio is only about 0.18, so the response oscillates with roughly 60% overshoot.
 
 ### 2.2 Controllability & observability
 
@@ -154,7 +154,7 @@ Semua pole berada di setengah bidang kiri ($\mathrm{Re}\{\lambda_i\}<0$), jadi s
 \mathcal{O} = \begin{bmatrix} C \\ CA \\ CA^2 \\ CA^3 \end{bmatrix}
 ```
 
-Untuk input aktuator $F_a$ saja dan output $y_c$ saja ($C=[0\;0\;1\;0]$):
+Using only the actuator input $F_a$ and only the output $y_c$ ($C=[0\;0\;1\;0]$):
 
 ```math
 \mathcal{C}_{F_a} =
@@ -174,24 +174,24 @@ Untuk input aktuator $F_a$ saja dan output $y_c$ saja ($C=[0\;0\;1\;0]$):
 \end{bmatrix}
 ```
 
-$\mathrm{rank}(\mathcal{C}) = \mathrm{rank}(\mathcal{O}) = 4 = n$. Artinya sistem **controllable** (cukup dengan aktuator $F_a$) dan **observable** (cukup dengan mengukur $y_c$), sehingga *full-state feedback* layak diterapkan.
+$\mathrm{rank}(\mathcal{C}) = \mathrm{rank}(\mathcal{O}) = 4 = n$. The system is therefore **controllable** (the actuator $F_a$ alone is enough) and **observable** (measuring $y_c$ alone is enough), so full-state feedback is feasible.
 
 ---
 
-## 3. Metode Kontrol
+## 3. Control Methods
 
 ### 3.1 Linear Quadratic Regulator (LQR) — [`01_LQR/`](01_LQR)
 
-<p align="center"><img src="docs/images/block_lqr.png" width="720" alt="Diagram blok LQR"></p>
+<p align="center"><img src="docs/images/block_lqr.png" width="720" alt="LQR block diagram"></p>
 
-LQR mencari hukum kontrol $u = -Kx$ yang meminimalkan indeks performa kuadratik
+LQR finds the control law $u = -Kx$ that minimises the quadratic performance index
 
 ```math
 J = \int_0^{\infty} \left( x^{T} Q\, x + u^{T} R\, u \right) dt ,
 \qquad Q \succeq 0,\; R \succ 0
 ```
 
-Solusinya diperoleh dari **Algebraic Riccati Equation (ARE)**:
+The solution follows from the **Algebraic Riccati Equation (ARE)**:
 
 ```math
 A^{T}P + PA - PBR^{-1}B^{T}P + Q = 0
@@ -200,15 +200,15 @@ K = R^{-1}B^{T}P,
 \qquad J^{*} = x_0^{T} P\, x_0
 ```
 
-$Q$ menghukum penyimpangan *state*, sedangkan $R$ menghukum besarnya usaha kontrol. Semakin besar $Q/R$, respons semakin agresif dan usaha kontrolnya semakin besar.
+$Q$ penalises state deviation and $R$ penalises control effort. A larger $Q/R$ ratio gives a more aggressive response at the cost of more control effort.
 
-#### Penalaan $Q$ & $R$ dengan Genetic Algorithm
+#### Tuning $Q$ & $R$ with a Genetic Algorithm
 
-Alih-alih coba-coba, diagonal $Q$ dan $R$ dicari dengan GA (`ga()` MATLAB, 1000 generasi, populasi 20, batas $q_i\in[0.1,100]$, $r_i\in[0.01,10]$):
+Instead of trial and error, the diagonals of $Q$ and $R$ are found with a GA (MATLAB `ga()`, 1000 generations, population 20, bounds $q_i\in[0.1,100]$, $r_i\in[0.01,10]$):
 
-<p align="center"><img src="docs/images/ga_flowchart.png" width="860" alt="Alur GA"></p>
+<p align="center"><img src="docs/images/ga_flowchart.png" width="860" alt="GA flowchart"></p>
 
-Fungsi biaya GA menggabungkan ISE (*integral squared error*) dengan penalti karakteristik respons transien tiap *state*, disimulasikan dari $x_0 = [1\;1\;1\;1]^T$ selama 10 s:
+The GA cost combines the ISE (*integral squared error*) with penalties on the transient characteristics of each state, simulated from $x_0 = [1\;1\;1\;1]^T$ for 10 s:
 
 ```math
 J_{GA} = \int_0^{10} \lVert x(t) \rVert^2 \, dt
@@ -217,13 +217,13 @@ J_{GA} = \int_0^{10} \lVert x(t) \rVert^2 \, dt
 \;+\; 100 \sum_{i} \lvert e_{ss,i} \rvert
 ```
 
-dengan $\mathrm{OS}_i$ = *overshoot* (%), $t_{s,i}$ = *settling time* 2%, dan $e_{ss,i}$ = *steady-state error* dari *state* ke-$i$.
+where $\mathrm{OS}_i$ is the overshoot (%), $t_{s,i}$ the 2% settling time, and $e_{ss,i}$ the steady-state error of state $i$.
 
 ### 3.2 LQR-PID — [`03_LQR_PID/`](03_LQR_PID)
 
-<p align="center"><img src="docs/images/block_lqr_pid.png" width="780" alt="Diagram blok LQR-PID"></p>
+<p align="center"><img src="docs/images/block_lqr_pid.png" width="780" alt="LQR-PID block diagram"></p>
 
-Kontroler PID MIMO ditala menggunakan hasil LQR (He *et al.*, 2000; Kaci *et al.*, 2019). Plant diaugmentasi dengan integrator pada input (*backstepping integral*):
+A MIMO PID controller is tuned from the LQR solution (He *et al.*, 2000; Kaci *et al.*, 2019). The plant is augmented with integrators on the inputs (*backstepping integral augmentation*):
 
 ```math
 \tilde A = \begin{bmatrix} A & B \\ 0 & 0 \end{bmatrix},\quad
@@ -231,7 +231,7 @@ Kontroler PID MIMO ditala menggunakan hasil LQR (He *et al.*, 2000; Kaci *et al.
 \Gamma = \begin{bmatrix} C & 0 \\ CA & CB \\ CA^2 & CAB \end{bmatrix}
 ```
 
-Gain LQR $K$ dari $(\tilde A,\tilde B,Q,R)$ dipetakan ke ruang output $\hat K = K\,\Gamma^{+}$, lalu dipecah menjadi $\hat K = [\hat K_1\;\hat K_2\;\hat K_3]$ untuk memperoleh gain PID:
+The LQR gain $K$ of $(\tilde A,\tilde B,Q,R)$ is mapped to the output space as $\hat K = K\,\Gamma^{+}$ and split into $\hat K = [\hat K_1\;\hat K_2\;\hat K_3]$ to obtain the PID gains:
 
 ```math
 K_d = \frac{\hat K_3}{1 + \hat K_3\,CB}, \qquad
@@ -239,13 +239,13 @@ K_p = \hat K_2\,(1 - K_d\,CB), \qquad
 K_i = \hat K_1\,(1 - K_d\,CB)
 ```
 
-$Q$ (6×6) dan $R$ (2×2) juga dioptimasi dengan GA seperti pada 3.1.
+$Q$ (6×6) and $R$ (2×2) are also tuned with the GA, as in 3.1.
 
 ### 3.3 Internal Model Principle (IMP) + LQR — [`05_IMP/`](05_IMP)
 
-<p align="center"><img src="docs/images/block_imp.png" width="780" alt="Diagram blok IMP"></p>
+<p align="center"><img src="docs/images/block_imp.png" width="780" alt="IMP block diagram"></p>
 
-Menurut *Internal Model Principle*, *tracking*/penolakan gangguan tanpa *steady-state error* dapat dicapai jika model pembangkit sinyal referensi/gangguan ikut ditanam di dalam loop. Kompensator orde-2 dengan nilai eigen $\{-1,\,0\}$ (memuat mode integrator) disusun dalam bentuk kanonik terkontrol:
+By the *Internal Model Principle*, zero steady-state error in tracking or disturbance rejection is achieved when a model of the reference/disturbance generator is embedded in the loop. A second-order compensator with eigenvalues $\{-1,\,0\}$ (containing an integrator mode) is built in controllable canonical form:
 
 ```math
 A_a = \begin{bmatrix} 0 & 1 \\ -a_0 & -a_1 \end{bmatrix},\quad
@@ -254,7 +254,7 @@ C_a = \begin{bmatrix} 1 & 1 \\ 1 & 1 \end{bmatrix},\quad
 s^2 + a_1 s + a_0 = s(s+1)
 ```
 
-Sistem teraugmentasi (6 *state*) lalu distabilkan dengan LQR (bobot dari GA):
+The augmented 6-state system is then stabilised with LQR (GA-tuned weights):
 
 ```math
 \begin{bmatrix} \dot x_p \\ \dot x_a \end{bmatrix}
@@ -266,7 +266,7 @@ Sistem teraugmentasi (6 *state*) lalu distabilkan dengan LQR (bobot dari GA):
 
 ### 3.4 Pontryagin's Maximum Principle (PMP) — [`04_PMP/`](04_PMP) *(WIP)*
 
-Formulasi kontrol optimal via Hamiltonian:
+Optimal control formulated through the Hamiltonian:
 
 ```math
 H(x,u,\lambda) = \tfrac12\left(x^{T}Qx + u^{T}Ru\right) + \lambda^{T}(Ax + Bu)
@@ -278,116 +278,116 @@ H(x,u,\lambda) = \tfrac12\left(x^{T}Qx + u^{T}Ru\right) + \lambda^{T}(Ax + Bu)
 \frac{\partial H}{\partial u} = 0 \;\Rightarrow\; u^{*} = -R^{-1}B^{T}\lambda
 ```
 
-Model Simulink `CariPMP.slx` sudah tersedia, tetapi `FindPMP.m` baru berisi definisi model dan bobot $Q$, $R$, $P$.
+The Simulink model `CariPMP.slx` exists, but `FindPMP.m` so far only defines the model and the $Q$, $R$, $P$ weights.
 
-### 3.5 PID & Reinforcement Learning *(rencana)*
+### 3.5 PID & Reinforcement Learning *(planned)*
 
-`06_RL/FindRL.slx` baru berupa kerangka model Simulink. PID murni belum diimplementasikan.
+`06_RL/FindRL.slx` is only a Simulink skeleton so far. A pure PID controller has not been implemented yet.
 
 ---
 
-## 4. Hasil
+## 4. Results
 
-### 4.1 LQR vs sistem tanpa kontrol (step response)
+### 4.1 LQR vs uncontrolled system (step response)
 
-Reproduksi analisis di [`docs/Report.pdf`](docs/Report.pdf) dengan $Q=\mathrm{diag}(10,1,10,1)$ dan $R=\mathrm{diag}(100,100)$:
+A reproduction of the analysis in [`docs/Report.pdf`](docs/Report.pdf) with $Q=\mathrm{diag}(10,1,10,1)$ and $R=\mathrm{diag}(100,100)$:
 
 <p align="center"><img src="docs/images/step_response_lqr.png" width="900" alt="Step response"></p>
 
-| Input step → $y_c$ | Sistem | Overshoot | Settling time (2%) | Nilai akhir |
+| Step input → $y_c$ | System | Overshoot | Settling time (2%) | Final value |
 |---|---|:---:|:---:|:---:|
-| Profil jalan $u$ (1 m) | Tanpa kontrol | 60.9 % | 2.39 s | 1.000 m |
+| Road profile $u$ (1 m) | Uncontrolled | 60.9 % | 2.39 s | 1.000 m |
 | | **LQR** | **18.1 %** | **0.99 s** | 0.913 m |
-| Gaya $F_a$ (1 N) | Tanpa kontrol | 55.6 % | 2.43 s | 0.0333 mm |
+| Force $F_a$ (1 N) | Uncontrolled | 55.6 % | 2.43 s | 0.0333 mm |
 | | **LQR** | **22.6 %** | **0.96 s** | 0.0342 mm |
 
-LQR memangkas overshoot sekitar 3× dan mempercepat *settling* sekitar 2.4×. Ada sedikit pergeseran nilai akhir (*offset*) karena LQR murni tidak memiliki aksi integral. Offset inilah yang menjadi motivasi pendekatan **LQR-PID** dan **IMP**.
+LQR cuts the overshoot by about 3× and settles about 2.4× faster. There is a small offset in the final value because pure LQR has no integral action. This offset motivates the **LQR-PID** and **IMP** approaches.
 
-### 4.2 Pergeseran pole
+### 4.2 Pole placement
 
 <p align="center"><img src="docs/images/pole_map.png" width="880" alt="Pole map"></p>
 
-Pole dominan bodi bergeser dari $-1.51 \pm 8.13j$ ($\zeta = 0.18$) ke $-3.60 \pm 8.04j$ ($\zeta = 0.41$). Frekuensi alaminya hampir tetap, tetapi redamannya naik lebih dari 2×. Mode roda (*wheel hop*) berubah menjadi dua pole real (−10.5 dan −694).
+The dominant body poles move from $-1.51 \pm 8.13j$ ($\zeta = 0.18$) to $-3.60 \pm 8.04j$ ($\zeta = 0.41$). The natural frequency stays almost the same, but the damping more than doubles. The wheel-hop mode becomes two real poles (−10.5 and −694).
 
-### 4.3 Transmisibilitas getaran jalan
+### 4.3 Road-vibration transmissibility
 
 <p align="center"><img src="docs/images/bode_transmissibility.png" width="760" alt="Bode transmissibility"></p>
 
-LQR menghilangkan puncak resonansi bodi (~1.3 Hz, dari +9.4 dB menjadi ≈0 dB) dan resonansi roda (~14 Hz, dari −19 dB menjadi −46 dB). Pada rentang 4–8 Hz yang paling sensitif bagi tubuh manusia (ISO 2631), getaran yang diteruskan ke bodi turun sekitar 9–17 dB.
+LQR removes the body resonance peak (~1.3 Hz, from +9.4 dB to ≈0 dB) and the wheel resonance (~14 Hz, from −19 dB to −46 dB). In the 4–8 Hz band, to which the human body is most sensitive (ISO 2631), the vibration transmitted to the body drops by about 9–17 dB.
 
-### 4.4 Pengaruh bobot $Q$ dan $R$
+### 4.4 Effect of the $Q$ and $R$ weights
 
-<p align="center"><img src="docs/images/qr_weight_effect.png" width="900" alt="Pengaruh Q dan R"></p>
+<p align="center"><img src="docs/images/qr_weight_effect.png" width="900" alt="Effect of Q and R"></p>
 
-- Menaikkan $Q$ (atau menurunkan $R$) membuat kontrol **lebih agresif**: overshoot turun dan osilasi cepat hilang, tetapi *offset* makin besar dan usaha kontrol makin tinggi.
-- Yang menentukan respons adalah **rasio** $Q/R$. Karena itu, pasangan $\{Q=\mathrm{diag}(0.1,0.01,0.1,0.01),\,R=I\}$ dan $\{Q=\mathrm{diag}(10,1,10,1),\,R=100I\}$ di laporan menghasilkan plot yang serupa.
+- Increasing $Q$ (or decreasing $R$) makes the controller **more aggressive**: overshoot drops and oscillations die out faster, but the offset grows and more control effort is needed.
+- Only the **ratio** $Q/R$ matters. This is why the pairs $\{Q=\mathrm{diag}(0.1,0.01,0.1,0.01),\,R=I\}$ and $\{Q=\mathrm{diag}(10,1,10,1),\,R=100I\}$ in the report give similar plots.
 
-### 4.5 Hasil optimasi GA (simulasi Simulink)
+### 4.5 GA optimisation results (Simulink)
 
-Pada ketiga plot berikut, gangguan berupa pulsa satuan pada $t = 3\text{–}5$ s (analogi melewati polisi tidur). Garis **solid = baseline** ($Q=I$, $R=I$) dan garis **putus-putus = bobot hasil GA**.
+In the three plots below, the disturbance is a unit pulse from $t = 3\text{–}5$ s (like driving over a speed bump). **Solid lines = baseline** ($Q=I$, $R=I$); **dashed lines = GA-tuned weights**.
 
 **LQR vs LQR-GA** (`01_LQR/FindLQR.m`)
-<p align="center"><img src="docs/images/hasil_lqr_ga.png" width="900" alt="Hasil LQR GA"></p>
+<p align="center"><img src="docs/images/lqr_ga_results.png" width="900" alt="LQR GA results"></p>
 
-Bobot hasil GA menurunkan puncak perpindahan bodi dari ≈0.5 menjadi ≈0.25 (sekitar −50%). Osilasi *state* setelah gangguan juga lebih kecil, dengan usaha kontrol yang sebanding.
+The GA-tuned weights reduce the peak body displacement from ≈0.5 to ≈0.25 (about −50%). Post-disturbance state oscillations are also smaller, with comparable control effort.
 
 **LQR-PID vs LQR-PID-GA** (`03_LQR_PID/FindLQR_PID.m`)
-<p align="center"><img src="docs/images/hasil_lqr_pid_ga.png" width="900" alt="Hasil LQR-PID GA"></p>
+<p align="center"><img src="docs/images/lqr_pid_ga_results.png" width="900" alt="LQR-PID GA results"></p>
 
-LQR-PID baseline berosilasi lambat dan belum *settle* dalam 30 s. Versi GA menekan deviasi *state* hingga mendekati nol. Lonjakan input ($\sim\!10^{10}$) muncul dari aksi derivatif terhadap tepi pulsa yang diskontinu. Masalah ini perlu diredam dengan filter derivatif ($N$) agar realistis.
+The baseline LQR-PID oscillates slowly and has not settled within 30 s. The GA version keeps the state deviations close to zero. The input spikes ($\sim\!10^{10}$) come from the derivative action acting on the discontinuous pulse edges. A derivative filter ($N$) is needed to make this realistic.
 
 **IMP vs IMP-GA** (`05_IMP/FindIMP.m`)
-<p align="center"><img src="docs/images/hasil_imp_ga.png" width="900" alt="Hasil IMP GA"></p>
+<p align="center"><img src="docs/images/imp_ga_results.png" width="900" alt="IMP GA results"></p>
 
-IMP mengembalikan output ke nol tanpa *steady-state error* setelah gangguan. Versi GA sedikit lebih cepat, tetapi dengan puncak input yang lebih tinggi (≈3 vs ≈1.3).
+IMP brings the output back to zero with no steady-state error after the disturbance. The GA version is slightly faster, but with a higher input peak (≈3 vs ≈1.3).
 
 ---
 
-## 5. Cara Menjalankan
+## 5. Getting Started
 
 ### MATLAB
 
-Kebutuhan: **MATLAB R2023b** (atau lebih baru) dengan toolbox berikut:
+Requires **MATLAB R2023b** (or newer) with the following toolboxes:
 
-| Toolbox | Dipakai untuk |
+| Toolbox | Used for |
 |---|---|
-| Simulink | model `Cari*.slx` |
+| Simulink | `Cari*.slx` models |
 | Control System Toolbox | `lqr`, `ss` |
 | Global Optimization Toolbox | `ga` |
 | Symbolic Math Toolbox | `jordan` (IMP) |
 
 ```matlab
 cd 01_LQR
-FindLQR        % GA → LQR → simulasi CariLQR.slx → plot
+FindLQR        % GA → LQR → simulate CariLQR.slx → plots
 ```
 
-Script lain dijalankan dengan cara yang sama dari foldernya masing-masing: `03_LQR_PID/FindLQR_PID.m` dan `05_IMP/FindIMP.m`. Setiap script memanggil model Simulink di folder yang sama, jadi **current folder MATLAB harus berada di folder tersebut**.
+Run `03_LQR_PID/FindLQR_PID.m` and `05_IMP/FindIMP.m` the same way from their own folders. Each script calls the Simulink model in the same folder, so **MATLAB's current folder must be that folder**.
 
-> GA berjalan hingga 1000 generasi, sehingga prosesnya bisa memakan waktu lama. Kurangi `MaxGenerations` untuk uji cepat. GA juga bersifat stokastik; tambahkan `rng(0)` di awal script agar hasilnya bisa direproduksi.
+> The GA runs for up to 1000 generations, which can take a long time. Lower `MaxGenerations` for a quick test. The GA is also stochastic; add `rng(0)` at the top of a script to make results reproducible.
 
-### Gambar README (Python)
+### README figures (Python)
 
 ```bash
 pip install numpy scipy matplotlib
 python docs/scripts/generate_figures.py
 ```
 
-Script ini membuat ulang gambar ilustrasi (skema, diagram blok, step response, pole map, Bode, variasi Q/R) dan mencetak matriks controllability/observability, pole, serta gain $K$ ke terminal.
+This regenerates the illustrations (schematic, block diagrams, step response, pole map, Bode plot, Q/R sweep). It also prints the controllability/observability matrices, poles, and the gain $K$ to the terminal.
 
 ---
 
-## 6. Catatan & Keterbatasan
+## 6. Notes & Limitations
 
-- **Satuan kekakuan di script MATLAB.** Di semua `Find*.m`, `kk = 340` dan `kr = 30` diberi komentar *kN/m*, tetapi dipakai langsung sebagai N/m (tidak dikali 1000). Analisis di `docs/Report.pdf` dan gambar Python di README sudah memakai satuan SI (`340e3`, `30e3`). Karena itu, hasil GA pada bagian 4.5 berasal dari model dengan kekakuan 1000× lebih kecil. Gunakan `kk = 340e3; kr = 30e3;` bila ingin konsisten dengan laporan.
-- **Kedua input dijadikan input kontrol.** Gain $K \in \mathbb{R}^{2\times4}$ dihitung untuk $[F_a;\,u]$, padahal secara fisik profil jalan $u$ adalah gangguan yang tidak bisa dikendalikan. Formulasi yang lebih realistis memakai $B_1$ (aktuator) sebagai input kontrol dan $B_2$ sebagai input gangguan.
-- **Full-state feedback** mengasumsikan keempat *state* terukur. Implementasi nyata memerlukan *observer* (misalnya Kalman filter/LQG). Hal ini dimungkinkan karena sistem observable.
-- `04_PMP` dan `06_RL` belum selesai.
+- **Stiffness units in the MATLAB scripts.** In every `Find*.m`, `kk = 340` and `kr = 30` are commented as *kN/m* but used directly as N/m (not multiplied by 1000). The analysis in `docs/Report.pdf` and the Python figures in this README use SI units (`340e3`, `30e3`). As a result, the GA results in section 4.5 come from a model whose stiffnesses are 1000× too small. Use `kk = 340e3; kr = 30e3;` to be consistent with the report.
+- **Both inputs are treated as control inputs.** The gain $K \in \mathbb{R}^{2\times4}$ is computed for $[F_a;\,u]$, even though the road profile $u$ is physically an uncontrollable disturbance. A more realistic formulation uses $B_1$ (actuator) as the control input and $B_2$ as the disturbance input.
+- **Full-state feedback** assumes all four states are measured. A real implementation needs an observer (e.g. a Kalman filter/LQG), which is possible because the system is observable.
+- `04_PMP` and `06_RL` are not finished yet.
 
 ---
 
-## 7. Referensi
+## 7. References
 
-Berkas PDF tersedia di folder [`references/`](references).
+PDFs are available in the [`references/`](references) folder.
 
 1. K. Á. Kis *et al.*, "Quarter Car Suspension State Space Model and Full State Feedback Control for Real-Time Processing," *SPSympo*, 2023. doi:10.23919/SPSympo57300.2023.10302720
 2. A. A. Ahmed *et al.*, "Modeling and Control of a Half Car Active Suspension System using Sliding Mode Controller and Linear Quadratic Regulator Controller," *ieCRES*, 2023. doi:10.1109/ieCRES57315.2023.10209435
@@ -397,4 +397,4 @@ Berkas PDF tersedia di folder [`references/`](references).
 6. R. Guardeño, M. J. López, V. M. Sánchez, "MIMO PID Controller Tuning Method for Quadrotor Based on LQR/LQG Theory," *Robotics*, 8(2), 2019.
 7. C. Choubey, J. Ohri, "Tuning of LQR-PID controller to control parallel manipulator," *Neural Computing and Applications*, 34, 2022.
 8. X. Chen, *Canonical Forms of State-Space Systems*, ME547 Linear Systems, University of Washington.
-9. Catatan kuliah: *Pontryagin's Maximum Principle*.
+9. Lecture notes: *Pontryagin's Maximum Principle*.

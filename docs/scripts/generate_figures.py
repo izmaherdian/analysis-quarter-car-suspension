@@ -1,12 +1,12 @@
 """
-Membuat gambar-gambar ilustrasi untuk README (skema model, diagram blok,
-pole map, step response, respons frekuensi, dan pengaruh bobot Q/R).
+Generates the illustrative figures for the README (model schematic, block
+diagrams, pole map, step response, frequency response, and Q/R weight effect).
 
-Hasil simulasi di sini adalah reproduksi Python dari analisis LQR di
-docs/Report.pdf (parameter BMW 530i bagian depan, satuan SI).
-Hasil optimasi GA tetap memakai plot MATLAB asli di docs/images/hasil_*.png.
+The simulations here are a Python reproduction of the LQR analysis in
+docs/Report.pdf (BMW 530i front-suspension parameters, SI units).
+The GA optimisation results use the original MATLAB plots in docs/images/*_ga_results.png.
 
-Jalankan dari root repo:
+Run from the repo root:
     python docs/scripts/generate_figures.py
 """
 
@@ -63,11 +63,11 @@ def save(fig, name):
 
 
 # ---------------------------------------------------------------- model
-kk = 340e3    # N/m   kekakuan ban
-kr = 30e3     # N/m   kekakuan pegas suspensi
-br = 1450     # Ns/m  redaman suspensi
-mc = 408      # kg    massa bodi (sprung)
-mus = 48.3    # kg    massa roda (unsprung)
+kk = 340e3    # N/m   tire stiffness
+kr = 30e3     # N/m   suspension spring stiffness
+br = 1450     # Ns/m  suspension damping
+mc = 408      # kg    body mass (sprung)
+mus = 48.3    # kg    wheel mass (unsprung)
 
 A = np.array([
     [0, 1, 0, 0],
@@ -91,7 +91,7 @@ def lqr(A, B, Q, R):
 
 
 def step_io(Am, j, t):
-    """Step response y_c terhadap input ke-j (0 = F_a, 1 = u)."""
+    """Step response of y_c to input j (0 = F_a, 1 = u)."""
     sys = signal.StateSpace(Am, B[:, j:j + 1], C, D[:, j:j + 1])
     _, y = signal.step(sys, T=t)
     return y
@@ -150,11 +150,11 @@ def fig_quarter_car():
     # body (sprung mass)
     ax.add_patch(FancyBboxPatch((-1.4, 3.6), 2.8, 1.0, boxstyle="round,pad=0.02",
                                 fc="#f5e7cf", ec=INK, lw=1.6))
-    ax.text(0, 4.1, r"$m_c$  (bodi)", ha="center", va="center", fontsize=14)
+    ax.text(0, 4.1, r"$m_c$  (body)", ha="center", va="center", fontsize=14)
     # wheel (unsprung mass)
     ax.add_patch(FancyBboxPatch((-1.1, 1.5), 2.2, 0.9, boxstyle="round,pad=0.02",
                                 fc="#d4ecc4", ec=INK, lw=1.6))
-    ax.text(0, 1.95, r"$m_{us}$  (roda)", ha="center", va="center", fontsize=14)
+    ax.text(0, 1.95, r"$m_{us}$  (wheel)", ha="center", va="center", fontsize=14)
 
     # suspension: spring, damper, actuator
     spring(ax, -0.8, 2.4, 3.6)
@@ -173,14 +173,14 @@ def fig_quarter_car():
     ax.add_patch(Rectangle((-1.6, 0.05), 3.2, 0.2, fc="#bdbcb6", ec=INK2, lw=1))
     for xi in np.linspace(-1.5, 1.5, 13):
         ax.plot([xi, xi - 0.15], [0.05, -0.12], color=INK2, lw=0.8)
-    ax.text(-1.72, 0.15, "jalan", color=INK2, fontsize=10, va="center", ha="right")
+    ax.text(-1.72, 0.15, "road", color=INK2, fontsize=10, va="center", ha="right")
 
     # coordinates
     up_arrow(ax, 1.75, 4.1, r"$y_c = x_3$")
     up_arrow(ax, 1.45, 1.95, r"$y_k = x_1$")
-    up_arrow(ax, 0.6, 0.15, r"$u(t)$  (profil jalan)", color=INK2)
+    up_arrow(ax, 0.6, 0.15, r"$u(t)$  (road profile)", color=INK2)
 
-    ax.set_title("Model Quarter-Car Suspensi Aktif (2-DOF)", pad=4)
+    ax.set_title("Active Quarter-Car Suspension Model (2-DOF)", pad=4)
     save(fig, "quarter_car_model.png")
 
 
@@ -219,13 +219,13 @@ def diagram_axes(w, h, title):
 
 
 def fig_block_lqr():
-    fig, ax = diagram_axes(8.6, 3.2, "Struktur Kontrol LQR (Full-State Feedback)")
+    fig, ax = diagram_axes(8.6, 3.2, "LQR Control Structure (Full-State Feedback)")
     ax.set_xlim(-0.6, 9.4)
     ax.set_ylim(-1.5, 1.6)
     box(ax, (4.2, 0.6), 2.6, 1.0, "Plant quarter-car\n" r"$\dot x = Ax + Bu$")
     box(ax, (4.2, -0.9), 1.6, 0.7, r"$-K$", fc="#fdf0ea", ec=C_OL)
     box(ax, (7.6, 0.6), 1.1, 0.7, r"$C$")
-    arrow(ax, [(0.0, 0.85), (2.9, 0.85)], r"$F_a$ / gangguan", loff=(0, 0.06))
+    arrow(ax, [(0.0, 0.85), (2.9, 0.85)], r"$F_a$ / disturbance", loff=(0, 0.06))
     arrow(ax, [(5.5, 0.6), (7.05, 0.6)], r"$x$", loff=(0, 0.06))
     arrow(ax, [(8.15, 0.6), (9.2, 0.6)], r"$y$", loff=(0, 0.06))
     arrow(ax, [(6.3, 0.6), (6.3, -0.9), (5.0, -0.9)])
@@ -238,7 +238,7 @@ def fig_block_lqr():
 
 
 def fig_block_lqr_pid():
-    fig, ax = diagram_axes(9.6, 3.6, "Struktur LQR-PID (MIMO-PID ditala dari gain LQR)")
+    fig, ax = diagram_axes(9.6, 3.6, "LQR-PID Structure (MIMO-PID tuned from LQR gain)")
     ax.set_xlim(-0.4, 10.6)
     ax.set_ylim(-1.8, 1.7)
     sumnode(ax, (1.0, 0.6))
@@ -257,17 +257,17 @@ def fig_block_lqr_pid():
             r"$K_d=\frac{\hat K_3}{1+\hat K_3CB}$,   "
             r"$K_p=\hat K_2(1-K_dCB)$,   $K_i=\hat K_1(1-K_dCB)$",
             ha="center", fontsize=10.5, color=INK2)
-    ax.text(5.2, -1.7, r"$K_{LQR}$ dari plant teraugmentasi  "
+    ax.text(5.2, -1.7, r"$K_{LQR}$ from the augmented plant  "
             r"$\tilde A=[A\ \ B;\ 0\ \ 0],\ \ \tilde B=[0;\ I]$",
             ha="center", fontsize=10.5, color=INK2)
     save(fig, "block_lqr_pid.png")
 
 
 def fig_block_imp():
-    fig, ax = diagram_axes(9.6, 3.6, "Struktur Internal Model Principle (IMP) + LQR")
+    fig, ax = diagram_axes(9.6, 3.6, "Internal Model Principle (IMP) + LQR Structure")
     ax.set_xlim(-0.4, 10.6)
     ax.set_ylim(-1.8, 1.7)
-    box(ax, (2.2, 0.6), 2.6, 1.1, "Kompensator\n(model internal)\n" r"$\dot x_a=A_ax_a+B_av$",
+    box(ax, (2.2, 0.6), 2.6, 1.1, "Compensator\n(internal model)\n" r"$\dot x_a=A_ax_a+B_av$",
         fc="#e6f6ef", ec=C_3, fs=10)
     box(ax, (4.6, 0.6), 0.9, 0.7, r"$C_a$", fc="#e6f6ef", ec=C_3)
     box(ax, (7.2, 0.6), 2.2, 1.1, "Plant\n" r"$\dot x_p=A_px_p+B_pu$")
@@ -288,16 +288,16 @@ def fig_block_imp():
 
 
 def fig_ga_flow():
-    fig, ax = diagram_axes(10.5, 2.9, "Alur Penalaan Bobot Q & R dengan Genetic Algorithm")
+    fig, ax = diagram_axes(10.5, 2.9, "Tuning the Q & R Weights with a Genetic Algorithm")
     ax.set_xlim(-0.2, 13.4)
     ax.set_ylim(-1.7, 1.3)
     steps = [
-        "Populasi awal\n" r"$[q_1..q_n,\ r_1,r_2]$",
+        "Initial\npopulation\n" r"$[q_1..q_n,\ r_1,r_2]$",
         r"$Q=\mathrm{diag}(q)$" "\n" r"$R=\mathrm{diag}(r)$",
-        "Solusi Riccati\n" r"$K=\mathrm{lqr}(Q,R)$",
-        "Simulasi\n" r"$\dot x=(A-BK)x$" "\n" r"$x_0=\mathbf{1}$, 10 s",
-        "Hitung biaya\n" r"$J_{GA}$",
-        "Seleksi,\ncrossover,\nmutasi",
+        "Riccati solution\n" r"$K=\mathrm{lqr}(Q,R)$",
+        "Simulate\n" r"$\dot x=(A-BK)x$" "\n" r"$x_0=\mathbf{1}$, 10 s",
+        "Evaluate cost\n" r"$J_{GA}$",
+        "Selection,\ncrossover,\nmutation",
     ]
     xs = np.linspace(1.0, 12.4, len(steps))
     for i, (x, s) in enumerate(zip(xs, steps)):
@@ -308,7 +308,7 @@ def fig_ga_flow():
     arrow(ax, [(xs[-1], -0.38), (xs[-1], -0.95), (xs[1], -0.95), (xs[1], -0.38)],
           color=INK2)
     ax.text((xs[1] + xs[-1]) / 2, -1.25,
-            "ulang hingga 1000 generasi (populasi 20)  →  " r"$Q_{opt},\ R_{opt},\ K_{opt}$",
+            "repeat for up to 1000 generations (population 20)  →  " r"$Q_{opt},\ R_{opt},\ K_{opt}$",
             ha="center", fontsize=10, color=INK2)
     save(fig, "ga_flowchart.png")
 
@@ -317,7 +317,7 @@ def fig_ga_flow():
 def fig_step_response():
     t = np.linspace(0, 4.5, 2000)
     fig, axs = plt.subplots(1, 2, figsize=(11, 3.8))
-    titles = [r"Input $F_a(t)$ (gaya aktuator/gangguan)", r"Input $u(t)$ (profil jalan)"]
+    titles = [r"Input $F_a(t)$ (actuator force/disturbance)", r"Input $u(t)$ (road profile)"]
     for j, ax in enumerate(axs):
         y_ol, y_cl = step_io(A, j, t), step_io(Acl, j, t)
         if j == 0:
@@ -325,13 +325,13 @@ def fig_step_response():
             ax.set_ylabel(r"$y_c$ [mm]  (step 1 N)")
         else:
             ax.set_ylabel(r"$y_c$ [m]  (step 1 m)")
-        ax.plot(t, y_ol, color=C_OL, label="Tanpa kontrol (open-loop)")
-        ax.plot(t, y_cl, color=C_LQR, label="Dengan LQR")
+        ax.plot(t, y_ol, color=C_OL, label="Uncontrolled (open-loop)")
+        ax.plot(t, y_cl, color=C_LQR, label="With LQR")
         ax.set_title(titles[j])
-        ax.set_xlabel("Waktu [s]")
+        ax.set_xlabel("Time [s]")
         ax.set_xlim(0, t[-1])
     axs[1].legend(loc="lower right")
-    fig.suptitle(r"Step Response Perpindahan Bodi $y_c$ — $Q=\mathrm{diag}(10,1,10,1)$, "
+    fig.suptitle(r"Body Displacement $y_c$ Step Response — $Q=\mathrm{diag}(10,1,10,1)$, "
                  r"$R=\mathrm{diag}(100,100)$", fontweight="bold", color=INK, y=1.02)
     fig.tight_layout()
     save(fig, "step_response_lqr.png")
@@ -354,7 +354,7 @@ def fig_pole_map():
         if zoom:
             ax.set_xlim(-10, 1)
             ax.set_ylim(-12, 12)
-            ax.set_title("Perbesaran: pole dominan (mode bodi)")
+            ax.set_title("Zoom: dominant poles (body mode)")
             for p in p_ol[np.abs(p_ol) < 15]:
                 if p.imag > 0:
                     ax.annotate(f"{p.real:.2f}{p.imag:+.2f}j", (p.real, p.imag),
@@ -366,7 +366,7 @@ def fig_pole_map():
                                 textcoords="offset points", xytext=(-40, 12),
                                 color=C_LQR, fontsize=9)
         else:
-            ax.set_title("Pole map sistem")
+            ax.set_title("System pole map")
             ax.legend(loc="upper left")
     fig.tight_layout()
     save(fig, "pole_map.png")
@@ -375,16 +375,16 @@ def fig_pole_map():
 def fig_bode():
     w = np.logspace(-0.5, 3, 800)
     fig, ax = plt.subplots(figsize=(8, 3.8))
-    for Am, col, lab in [(A, C_OL, "Tanpa kontrol"), (Acl, C_LQR, "Dengan LQR")]:
+    for Am, col, lab in [(A, C_OL, "Uncontrolled"), (Acl, C_LQR, "With LQR")]:
         sys = signal.StateSpace(Am, B[:, 1:2], C, D[:, 1:2])
         w_, mag, _ = signal.bode(sys, w=w)
         ax.semilogx(w_ / (2 * np.pi), mag, color=col, label=lab)
     ax.axvspan(4, 8, color="#e34948", alpha=0.08, lw=0)
-    ax.text(5.6, ax.get_ylim()[0] + 3, "4–8 Hz\n(sensitif bagi\ntubuh manusia)",
+    ax.text(5.6, ax.get_ylim()[0] + 3, "4–8 Hz\n(most sensitive\nfor humans)",
             ha="center", fontsize=8.5, color=INK2)
-    ax.set_xlabel("Frekuensi [Hz]")
+    ax.set_xlabel("Frequency [Hz]")
     ax.set_ylabel(r"$|Y_c/U|$ [dB]")
-    ax.set_title(r"Transmisibilitas Jalan → Bodi ($u \rightarrow y_c$)")
+    ax.set_title(r"Road → Body Transmissibility ($u \rightarrow y_c$)")
     ax.legend(loc="upper right")
     fig.tight_layout()
     save(fig, "bode_transmissibility.png")
@@ -400,20 +400,20 @@ def fig_qr_sweep():
         Kq = lqr(A, B, np.diag([q, 1, q, 1]), np.diag([100, 100]))
         y = step_io(A - B @ Kq, 1, t)
         axs[0].plot(t, y, color=col, label=rf"$q_{{1,3}}={q:g}$")
-    axs[0].set_title(r"Variasi $Q=\mathrm{diag}(q,1,q,1)$, $R=100I$")
+    axs[0].set_title(r"Varying $Q=\mathrm{diag}(q,1,q,1)$, $R=100I$")
     # (b) R scaling, Q fixed
     for r, col in zip([1000, 100, 10, 1], shades_b):
         Kr = lqr(A, B, Q_rep, np.diag([r, r]))
         y = step_io(A - B @ Kr, 1, t)
         axs[1].plot(t, y, color=col, label=rf"$r={r:g}$")
-    axs[1].set_title(r"Variasi $R=rI$, $Q=\mathrm{diag}(10,1,10,1)$")
+    axs[1].set_title(r"Varying $R=rI$, $Q=\mathrm{diag}(10,1,10,1)$")
     for ax in axs:
         ax.plot(t, y_ol, color=C_OL, lw=1.2, ls="--", label="Open-loop")
-        ax.set_xlabel("Waktu [s]")
+        ax.set_xlabel("Time [s]")
         ax.set_ylabel(r"$y_c$ [m]")
         ax.set_xlim(0, t[-1])
         ax.legend(fontsize=8.5, loc="upper left", bbox_to_anchor=(1.0, 1.0))
-    fig.suptitle(r"Pengaruh Bobot $Q$ dan $R$ terhadap Step Response (input jalan $u$)",
+    fig.suptitle(r"Effect of the $Q$ and $R$ Weights on the Step Response (road input $u$)",
                  fontweight="bold", color=INK, y=1.02)
     fig.tight_layout()
     save(fig, "qr_weight_effect.png")
